@@ -23,4 +23,4 @@ if __name__ == "__main__":
 		write_dir = sys.argv[2]
 		create_labels(read_dir, write_dir)
 	except:
-		print "Please provide the directory where the labelled CAPTCHAs are stored as well as the directory to store the label file in"
+		print "Please provide the directory where the labeled CAPTCHAs are stored as well as the directory to store the label file in"
