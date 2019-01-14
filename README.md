@@ -16,7 +16,7 @@ Each of these packages can be installed using:
 pip install <package_name>
 ```
 
-For the final step, AOCR Model Deployment, the [Tensorflow Serving](https://github.com/tensorflow/serving) is also required. The simplest installation is via APT. The steps can be found [here](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/setup.md).
+For the final step, AOCR Model Deployment, [Tensorflow Serving](https://github.com/tensorflow/serving) is also required. The simplest installation is via APT. The steps can be found [here](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/setup.md).
 
 ## CAPTCHA Solving Process
 
@@ -32,13 +32,13 @@ The CAPTCHA solving process consists of six steps:
 
 ### 1. CAPTCHA retrieval
 
-In order to train the AOCR model, examples of the CAPTCHA are required. Ideally, an initial testing dataset should consist of 500 CAPTCHAs where 450 will be used for training and 50 for validation. If the initial results indicate that process is successful, these values can be increased to further improve the accuracy of the model.
+In order to train the AOCR model, examples of the CAPTCHA are required. Ideally, an initial testing dataset should consist of 500 CAPTCHAs where 450 will be used for training and 50 for validation. If the initial results indicate that the process is successful, these values can be increased to further improve the accuracy of the model.
 
-Where the CAPTCHA is implemented will determine the retrieval process. Ideally, you want to look for the request used to retrieve the CAPTCHA. Once you have this link, you should be able to perform an iterative `wget` request to retrieve and save the required CAPTCHAs. The naming convention for these downloads does not really matter since the CAPTCHAs will be renamed after labeling.
+The location of the CAPTCHA implementation will determine the retrieval process. Ideally, you want to look for the request used to retrieve the CAPTCHA. Once you have this link, you should be able to perform an iterative `wget` request to retrieve and save the required number of CAPTCHAs. The naming convention for these downloads does not really matter since the CAPTCHAs will be renamed after labeling.
 
 ### 2. CAPTCHA Labeling
 
-The CAPTCHA labeling process requires the most effort and time in the entire process. A helper script, `captcha_labeling_script.py`, is provided to assist with this process.
+The CAPTCHA labeling process requires the most effort and time. A helper script, `captcha_labeling_script.py`, is provided to assist with this process.
 
 The script can be used by executing:
 
@@ -96,7 +96,7 @@ The same values of `--max-width` and `--max-height` used for training should be 
 
 The results can then be reviewed. The 100% accuracy hits are the CAPTCHAs that the model was able to correctly predict. A high number of these indicates positive results for completely solving the CAPTCHA. More data can be used to further increase the accuracy of the model.
 
-The model will indicate the actual and predicted answer for CAPTCHAs were the entire CAPTCHA could not be predicted. A review of these results will indicate what characters the model is currently confusing. The most common are `l` and `i` as well as `n` and `m`. If there are any incorrect predictions that does not make logical sense, such as `C` being predicted as `X`, review the labeled data as it could be that some of the labels are incorrect.
+The model will indicate the actual and predicted answer for CAPTCHAs were the entire CAPTCHA could not be predicted. A review of these results will indicate what characters the model is currently confusing. The most common are `l` and `i` as well as `n` and `m`. If there are any incorrect predictions that do not make logical sense, such as `C` being predicted as `X`, review the labeled data as it could be that some of the labels are incorrect.
 
 If almost no testing samples are solved 100%, it could indicate that the noise in the CAPTCHA is too high and hence a pre-processing step is required. This will depend on the specific CAPTCHA. Additionally, more training samples, or even more training steps, can also improve the accuracy.
 
