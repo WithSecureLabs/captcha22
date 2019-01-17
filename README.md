@@ -1,6 +1,6 @@
 # How to create a text-based CAPTCHA solving engine
  
-This is a how-to guide for creating a CAPTCHA solving AI model that can be used to solve text-based CAPTCHAs as discussed in the following blog. Two helper scripts are provided that can aid in the CAPTCHA-labeling process.
+This is a how-to guide for creating a CAPTCHA solving AI model that can be used to solve text-based CAPTCHAs as discussed in the following [blog](https://labs.mwrinfosecurity.com/blog/captcha22/). Two helper scripts are provided that can aid in the CAPTCHA-labeling process.
 
 ## Dependencies
 
