@@ -37,7 +37,7 @@ def label_captchas(read_dir, write_dir):
 
 if __name__ == "__main__":
 	print "Usage: ./captcha_labeling_script.py <directory with CAPTCHAs> <directory to store labeled CAPTCHAs>"
-	print "Enter the label for the CAPTCHA. Use \"-\" to terminate entry and \"`\" to quit.
+	print "Enter the label for the CAPTCHA. Use \"-\" to terminate entry and \"`\" to quit."
 	try:
 		read_dir = sys.argv[1]
 		write_dir = sys.argv[2]
