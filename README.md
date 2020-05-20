@@ -1,167 +1,207 @@
-# How to create a text-based CAPTCHA solving engine
- 
-This is a how-to guide for creating a CAPTCHA solving AI model that can be used to solve text-based CAPTCHAs as discussed in the following [blog](https://labs.mwrinfosecurity.com/blog/captcha22/). Two helper scripts are provided that can aid in the CAPTCHA-labeling process.
+<p align="center">
+    <img src="https://github.com/FSecureLABS/captcha22/images/CAPTCHA22.svg" width="500px">
+</p>
 
-## Dependencies
+> **CAPTCHA22** is a toolset for building, and training, CAPTCHA cracking models using neural networks. These models can then be used to crack CAPTCHAs with a high degree of accuracy. When used in conjunction with other scripts, CAPTCHA22 gives rise to attack automatation; subverting the very control that aims to stop it.
 
-The following Python packages are required to create the model:
-* Tensorflow - [High Performance Numerical Computation](https://www.tensorflow.org/)
-* AOCR - [Attention Optimal Character Recognition model](https://github.com/emedvedev/attention-ocr)
-* CV2 - [OpenCv](https://opencv.org/) for reading and viewing images (Optional for helper scripts)
-* Glob - For file management (Optional for helper scripts)
+### Table of contents 
 
-Each of these packages can be installed using:
-
-```
-pip install <package_name>
-```
-
-For the final step, AOCR Model Deployment, [Tensorflow Serving](https://github.com/tensorflow/serving) is also required. The simplest installation is via APT. The steps can be found [here](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/setup.md).
-
-## CAPTCHA Solving Process
-
-The CAPTCHA solving process consists of six steps:
-
-1. CAPTCHA Retrieval
-2. CAPTCHA Labeling
-3. AOCR Dataset Generation
-4. AOCR Model Training
-5. AOCR Model Validation
-6. AOCR Model Deployment
+- [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+- [Usage: How to crack CAPTCHAs](#usage-how-to-crack-captchas)
+    - [Step 1: Creating training sample data (labelling CAPTCHAs)](#step-1-creating-training-sample-data-labelling-captchas)
+    - [Step 2: Training a CAPTCHA model](#step-2-training-a-captcha-model)
+    - [Step 3: CAPTCHA Cracking](#step-3-captcha-cracking)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 
-### 1. CAPTCHA retrieval
 
-In order to train the AOCR model, examples of the CAPTCHA are required. Ideally, an initial testing dataset should consist of 500 CAPTCHAs where 450 will be used for training and 50 for validation. If the initial results indicate that the process is successful, these values can be increased to further improve the accuracy of the model.
+## Installation
 
-The location of the CAPTCHA implementation will determine the retrieval process. Ideally, you want to look for the request used to retrieve the CAPTCHA. Once you have this link, you should be able to perform an iterative `wget` request to retrieve and save the required number of CAPTCHAs. The naming convention for these downloads does not really matter since the CAPTCHAs will be renamed after labeling.
+_CAPTCHA22 requires [tensorflow](https://github.com/tensorflow/tensorflow) (see [prerequisites](#prerequisites))._ You can then install CAPTCHA22  using `pip`:
 
-### 2. CAPTCHA Labeling
-
-The CAPTCHA labeling process requires the most effort and time. A helper script, `captcha_labeling_script.py`, is provided to assist with this process.
-
-The script can be used by executing:
-
-```
-python catcha_labeling_script.py <directory with CAPTCHAs> <directory to store labeled CAPTCHAs>
+```bash
+pip install captcha22
 ```
 
-The script will show the CAPTCHAs one by one requesting input from the user for the label of the CAPTCHA. The user can press `-` to end the current label or `` ` `` to end the labeling session. For each entered label, the CAPTCHA will be saved with the label as the name and the unlabeled CAPTCHA image will be removed.
+### Prerequisites
 
-### 3. AOCR Dataset Generation
+CAPTCHA22 is most performant on a GPU-enabled tensorflow build. This, however, will require numerous steps (as discussed [here](https://www.tensorflow.org/install/gpu)). 
 
-Training and validation datasets have to be created for the AOCR model. The `label_generating_script.py` helper script can be used to generate the dataset if the `captcha_labeling_script.py` was used to label the CAPTCHA.
+* To install a less optimal, CPU-based, tensorflow build - you can simply issue the following command:
 
-The script can be used by executing:
+    ```bash
+    pip install tensorflow
+    ```
 
-```
-python label_generating_script.py <directory where CAPTCHAs are stored> <directory to store label file>
-```
+* The tensorflow [serving](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/setup.md#installation-1) addon is required to host trained CAPTCHA models.
 
-The output from the script would be a label file, `label.txt`, with the names and answers for each of the CAPTCHAs. The contents of this file should be split into two, namely `train_labels.txt` and `test_labels.txt`. It is recommended that roughly 10% of all data is used for testing. If 500 CAPTCHAs were labeled, copy 450 of the lines of `label.txt` to `train_labels.txt` and the remaining 50 lines to `test_labels.txt`.
+## Usage: How to crack CAPTCHAs
 
-These files will have to be converted into the `tfrecords` format for the AOCR model. Copy the two files into the directory where the CAPTCHAs are stored and from the directory execute the following:
+CAPTCHA22 works by training a neural network against a sample of labelled CAPTCHAs (using a sliding CNN with a LSTM module). Once this model is suitably accurate, it can be applied to unknown CAPTCHAs - automating the CAPTCHA cracking process. 
 
-```
-aocr dataset train_labels.txt training.tfrecords
-aocr dataset test_labels.txt testing.tfrecords
-```
+This process is broken down into 3 steps: 
 
-### 4. AOCR Model Training
+### Step 1: Creating training sample data (labelling CAPTCHAs)
 
-The AOCR model will have to be trained. This can be done by executing the following:
+The first step in this whole process is create a sample of correctly labelled CAPTCHAs. Ideally, you'll want to aim for at least 200.
 
-```
-aocr train training.tfrecords
-```
+#### 1. Collecting CAPTCHAs 
 
-Remember to include and set the `--max-width` and `--max-height` values depending on the size of the CAPTCHA used.
+Unfortunately, there is no *one size fits all* solution for collecting CAPTCHA samples and you'll have to be innovative with your approach. In our experience, we've had little difficulty automating this process using `wget` or the python `requests` library. How you approach this is up to you, but a good starting point would probably be to try and work out how the target application is generating/serving their CAPTCHAs. 
 
-The `loss` and `perplexity` values should be reviewed during training. Ideally the `perplexity` will fall to 1.00 and the `loss` should drop below 0.002. The model will auto-save every 100 steps. Once sufficient `loss` and `perplexity` values have been reached, the training can be stopped by simply pressing `Ctrl^C`. Training can also be continued later by just running the same command. It is recommended that for every 500 steps, training is stopped, and a validation round is performed. 
+#### 2. Labelling
 
-### 5 AOCR Model Validation
+Sadly, labelling is manual. This is most laborious and time consuming step in this whole process - fortunately things only get better from here. To try and make things a little easier, we've included functionality to help with labelling: 
 
-Validation of the AOCR model is required to determine if the model has successfully learnt the features and text of the CAPTCHA. Validation can be done by executing the following:
-
-```
-aocr test testing.tfrecords
+```bash
+captcha22 client label --input=<stored captcha folder>
 ```
 
-The same values of `--max-width` and `--max-height` used for training should be provided for the validation step. The validation step will provide four readings per CAPTCHA namely:
+Once complete, CAPTCHA22 will produce a ZIP file (e.g. `<api_username>_<test_name>_<version_number>.zip`) that you can upload (discussed in [step 2](#upload-captcha-training-samples)). 
 
-1. `Accuracy` - The accuracy of the entire image prediction. 100% indicates that all character were successfully predicted.
-2. `Probability` - The certainty of the model that the provided prediction is correct. This can be used to filter predictions of a trained model to improve submission accuracy. 
-3. `Loss` - A higher loss indicates a bigger discrepancy between the learnt model and the validation data.
-4. `Perplexity` - A higher perplexity indicates that the validation data is "new" to the model and it hasn't learnt or seen anything like it before.
+### Step 2: Training a CAPTCHA model 
 
-The results can then be reviewed. The 100% accuracy hits are the CAPTCHAs that the model was able to correctly predict. A high number of these indicates positive results for completely solving the CAPTCHA. More data can be used to further increase the accuracy of the model.
+Once you have a sample set of labelled CAPTCHAs, the next step is to begin training the CAPTCHA model. 
 
-The model will indicate the actual and predicted answer for CAPTCHAs were the entire CAPTCHA could not be predicted. A review of these results will indicate what characters the model is currently confusing. The most common are `l` and `i` as well as `n` and `m`. If there are any incorrect predictions that do not make logical sense, such as `C` being predicted as `X`, review the labeled data as it could be that some of the labels are incorrect.
+#### 1. Launch the Server (and API)
 
-If almost no testing samples are solved 100%, it could indicate that the noise in the CAPTCHA is too high and hence a pre-processing step is required. This will depend on the specific CAPTCHA. Additionally, more training samples, or even more training steps, can also improve the accuracy.
+To do this, you first need to launch CAPTCHA22's server engine, which will poll the `./Unsorted/` directory for new ZIPs: 
 
-### 6 AOCR Model Deployment
-
-If a sufficiently accurate model could be trained, the model should be deployed to a Tensorflow server for use. The model will have to be extracted first and can be done by executing:
-
-```
-aocr export exported-model
+```bash
+captcha22 server engine
 ```
 
-Copy the contents of the `exported-model` folder into a sub-folder named `1`. The exported model can now be deployed using a Tensorflow model server.
-
-To create the server, execute the following command:
+Enable the API for interfacing with the CAPTCHA22 engine (if you're an advanced user, feel free to skip this step):
 
 ```
+captcha22 server api
+```
+
+*The default API credentials are `admin:admin`. You can modify the `users.txt` file to change this value, or add additional users. See the below code snippet for guidance:*
+
+```bash
+python -c "from werkzeug.security import generate_password_hash;print('username_string' + ',' + generate_password_hash('password_string'))"
+```
+
+#### 2. Upload CAPTCHA training samples
+
+To upload training samples, simply drop the ZIP file you created in [Step 1](#labelling) into `./Unsorted/`. Alternatively, if you opted to enable the API, you can perform this step interactively using the client: 
+
+
+```bash
+captcha22 client api
+```
+
+In both cases, CAPTCHA22 will automatically begin training a model. 
+
+#### 3. Deploy the trained model 
+
+Once a model is trained and sufficiently accurate, the model can be deployed to use for automated cracking. The model can either be deployed on the CAPTCHA22 server or downloaded. Both methods can be performed using the interactive API client.
+
+To host the model, extract the ZIP and execute:
+
+```bash
 tensorflow_model_server --port=9000 --rest_api_port=9001 --model_name=<yourmodelname> --model_base_path=<full path to exported model directory>
 ```
 
-To make use of this model, a curl request with a base64 encoded CAPTCHA can be used. Such as the following example:
+The interactive API client can also be used to upload a CAPTCHA to CAPTCHA22 to be solved by the hosted model. 
 
-```
+*The following cURL request will verify whether the model is working:*
+
+```bash
 curl -X POST \
-  http://localhost:9001/v1/models/yourmodelname:predict \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -d '{
-  "signature_name": "serving_default",
-  "inputs": {
-     	"input": { "b64": "/9j/4AAQ==" }
-  }
-}'
+    http://localhost:9001/v1/models/<yourmodelname>:predict \
+    -H 'cache-control: no-cache' \
+    -H 'content-type: application/json' \
+    -d '{
+            "signature_name": "serving_default",
+            "inputs": 
+            {
+                "input": { "b64": "/9j/4AAQ==" }
+            }
+        }'
 ```
 
-The server would then respond with the CAPTCHA answer as well as prediction certainty. To increase submission accuracy, the prediction certainty can be used as filter value to discard any CAPTCHAs with a prediction below a chosen certainty.
+### Step 3: CAPTCHA Cracking
 
+Once a model is hosted, you'll be able to pass CAPTCHAs to the model and receive an answer (i.e. automation). You can use the template code below to use CAPTCHA22 in conjuntion with your own custom code to execute a variety of automated attacks (e.g. _Username enumeration_, _Brute force password guessing_,  _Password spraying_, etc.).
 
+```python
+from captcha22 import Cracker
 
+# Create cracker instance, all arguments are optional
+solver = Cracker(
+    #  server_url="http://127.0.0.1",
+    #  server_path="/captcha22/api/v1.0/",
+    #  server_port="5000",
+    #  username=None,
+    #  password=None,
+    #  session_time=1800,
+    #  use_hashes=False,
+    #  use_filter=False,
+    #  use_local=False,
+    #  input_dir="./input/",
+    #  output="./output/",
+    #  image_type="png",
+    #  filter_low=130,
+    #  filter_high=142,
+    #  captcha_id=None
+    )
 
+# Retrieve captcha from website
+...
+# Create b64 image string
+...
 
+# Solve with CAPTCHA22
+answer = solver.solve_captcha_b64(b64_image_string)
 
+# Submit answer to website and launch attack
+...
+```
 
+As the model exposes a JSON API, you're not restricted to Python if you prefer to use tools such as cURL, wget, or anything else.
 
+Two example cracker scripts are also provided (`baseline` and `pyppeteer`). Both of these scripts are experimental and will not cater for most cases.
 
+* The `baseline` script will create a connection to the CAPTCHA22 server, or a locally hosted model, before requesting the file path to a CAPTCHA. 
+* The `pyppeteer` script will use the baseline script and simulate browser requests to find and solve the CAPTCHA, before running a login attack.
 
+To execute one of these scripts:
+ 
+```bash
+captcha22 client cracking --script=<script name>
+```
 
+## Troubleshooting
 
+CAPTCHA22 was tested on two GPU-enabled Tensorflow rigs with the following specifications:
 
+|                    | Rig 1             | Rig 2            |
+| ------------------ | ----------------- | ---------------- | 
+| **Graphics Card**  | GeForce GTX 1650  | GeForce GTX 960  |
+| **OS**             | Ubuntu 16.06      | Ubuntu 16.04     |
+| **Cuda Lib**       | Cuda 10.0.130     | Cuda 9.1.1       |
+| **cuDDN Lib**      | cuDNN 10.0        | cuDNN 7.0        |
+| **Tensorflow**     | Tensorflow 1.10.1 | Tensorflow 1.4.1 |
 
+*For assistance on any issues in CAPTCHA22 itself, please log an issue.*
 
+## Contributing
 
+See [`CONTRIBUTING.md`](https://github.com/FSecureLABS/captcha22/CONTRIBUTING.md) for more information.
 
+## License 
 
+MIT License
 
+Copyright (c) 2020 F-SECURE
 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-
-
-
-
-
-
-
-
-
-
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
