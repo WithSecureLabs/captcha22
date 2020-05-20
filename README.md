@@ -2,7 +2,7 @@
     <img src="https://raw.githubusercontent.com/FSecureLABS/captcha22/master/images/CAPTCHA22.svg" width="500px">
 </p>
 
-> **CAPTCHA22** is a toolset for building, and training, CAPTCHA cracking models using neural networks. These models can then be used to crack CAPTCHAs with a high degree of accuracy. When used in conjunction with other scripts, CAPTCHA22 gives rise to attack automatation; subverting the very control that aims to stop it.
+> **CAPTCHA22** is a toolset for building, and training, CAPTCHA cracking models using neural networks. These models can then be used to crack CAPTCHAs with a high degree of accuracy. When used in conjunction with other scripts, CAPTCHA22 gives rise to attack automation; subverting the very control that aims to stop it.
 
 ### Table of contents 
 
