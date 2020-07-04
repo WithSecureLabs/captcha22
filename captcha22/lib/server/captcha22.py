@@ -247,6 +247,9 @@ class Captcha22:
     def copy_files(self, file):
         print("Starting the copy of files")
         names = file.split(".")[0].split("/")[-1].split("_")
+        if (file[0] == "."):
+            names = file.split(".")[1].split("/")[-1].split("_")
+
 
         # Creating folder structure data
         os.system('mkdir ' + self.busy_URL + "/" + names[0])
@@ -298,6 +301,8 @@ class Captcha22:
     def label_captchas(self, file):
         # Function used to label the captchas
         names = file.split(".")[0].split("/")[-1].split("_")
+        if (file[0] == '.'):
+            names = file.split(".")[1].split("/")[-1].split("_")
         read_dir = self.busy_URL + "/" + \
             names[0] + "/" + names[1] + "/" + names[2] + "/data/"
         write_dir = self.busy_URL + "/" + \
@@ -342,6 +347,8 @@ class Captcha22:
 
     def generate_aocr_records(self, file):
         names = file.split(".")[0].split("/")[-1].split("_")
+        if (file[0] == '.'):
+            names = file.split(".")[1].split("/")[-1].split("_")
 
         # Creating folder structure data
         os.system('aocr dataset ' + self.busy_URL + "/" + names[0] + "/" + names[1] + "/" + names[2] + "/labels/training_labels.txt " +
@@ -354,6 +361,8 @@ class Captcha22:
     def create_model(self, file):
         print(file)
         names = file.split(".")[0].split("/")[-1].split("_")
+        if (file[0] == '.'):
+            names = file.split(".")[1].split("/")[-1].split("_")
         path = self.busy_URL + "/" + names[0] + \
             "/" + names[1] + "/" + names[2] + "/"
         model = captcha(path)
