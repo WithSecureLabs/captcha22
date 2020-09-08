@@ -4,10 +4,18 @@ import argparse
 import site
 import sys
 
-sites = site.getsitepackages()
+try:
+    sites = site.getsitepackages()
 
-for site_path in sites:
-    sys.path.append(site_path + "/captcha22")
+    for site_path in sites:
+        sys.path.append(site_path + "/captcha22")
+except:
+    pass
+
+import captcha22 as _;
+
+for path in _.__path__:
+    sys.path.append(path)
 
 from lib.core.client import (api_basic, api_full, captcha_labeller,
                                 captcha_typer, client_api, cracker,
