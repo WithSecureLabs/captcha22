@@ -3,6 +3,7 @@
 import argparse
 import site
 import sys
+import logging
 
 try:
     sites = site.getsitepackages()
@@ -11,6 +12,8 @@ try:
         sys.path.append(site_path + "/captcha22")
 except:
     pass
+
+logging.basicConfig(level=logging.INFO)
 
 import captcha22 as _;
 

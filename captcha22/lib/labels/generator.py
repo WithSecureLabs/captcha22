@@ -2,10 +2,12 @@
 import glob
 import sys
 import argparse
+import logging
 
 
 class LabelGenerator:
-    def __init__(self, input_dir="input/", output="output/", image_type="png"):
+    def __init__(self, input_dir="input/", output="output/", image_type="png", logger = logging.getLogger("Captcha22 Label Generator")):
+        self.logger = logger
         self.read_dir = input_dir
         self.write_dir = output
         self.image_type = image_type

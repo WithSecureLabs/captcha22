@@ -5,9 +5,11 @@ import glob
 import os
 import sys
 import cv2
+import logging
 
 class CaptchaLabeller:
-    def __init__(self, input_dir="input/", output="output/", image_type="png"):
+    def __init__(self, input_dir="input/", output="output/", image_type="png", logger = logging.getLogger("Captcha22 Captcha Labeller")):
+        self.logger = logger
         self.read_dir = input_idr
         self.write_dir = output
         self.image_type = image_type
@@ -20,22 +22,22 @@ class CaptchaLabeller:
         for o in onlyfiles:
             if(o.find(self.image_type) != -1):
                 img = cv2.imread(o)
-                print("Showing image")
+                self.logger.info("Showing image")
                 text = ''
                 while(1):
                     cv2.imshow('captcha', img)
                     c = cv2.waitKey(0)
                     if c == ord('-'):
-                        print("Exiting")
+                        self.logger.info("Exiting")
                         break
                     elif c == ord('`'):
-                        print("Full exit")
+                        self.logger.info("Full exit")
                         exit()
                     else:
-                        print('you pressed %s' % chr(c))
+                        self.logger.info('you pressed %s' % chr(c))
                         text += chr(c)
 
-                print("Final text is: " + text)
+                self.logger.info("Final text is: " + text)
 
                 # Save the image
                 cv2.imwrite(self.write_dir + text.upper() +

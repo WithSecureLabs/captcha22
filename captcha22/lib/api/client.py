@@ -5,10 +5,12 @@ import getpass
 import json
 import time
 import requests
+import logging
 
 
 class Client:
-    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None):
+    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None, logger = logging.getLogger("Captcha22 Client API")):
+        self.logger = logger
         self.username = username
         self.password = password
         self.token = ''
@@ -24,7 +26,7 @@ class Client:
             self.username, self.password))
         load = json.loads(r.content)
         if load['message'] == 'success':
-            print("Got token")
+            self.logger.info("Got token")
             self.token = load['token']
 
     def upload_captchas(self, clientName, dataFile):
@@ -36,13 +38,13 @@ class Client:
         ]
         r = requests.post(url, files=files, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
     def get_captcha_details(self, captchaID):
         url = self.serverURL + "captchas/" + str(captchaID)
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
         return r.content
 
@@ -55,7 +57,7 @@ class Client:
         url = self.serverURL + "captchas"
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
     def get_exported_model(self, captchaID):
         token = self.get_captcha_token(captchaID)
@@ -78,24 +80,25 @@ class Client:
         files = [
             ('captcha', ('captcha', json.dumps(datas), 'application/json')),
         ]
+        self.logger.info (json(datas))
 
         r = requests.post(url, json=datas, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
     def get_training_update(self, captchaID):
         token = self.get_captcha_token(captchaID)
         url = self.serverURL + "training_update/" + token
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
     def get_results(self, captchaID):
         token = self.get_captcha_token(captchaID)
         url = self.serverURL + "results/" + token
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
     def solve_captcha(self, captchaID):
         token = self.get_captcha_token(captchaID)
@@ -112,10 +115,11 @@ class Client:
         }
         r = requests.post(url, json=datas, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
 class Menu:
-    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None):
+    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None, logger = logging.getLogger("Captcha22 Client API")):
+        self.logger = logger
         self.authed = False
 
         self.server_url = server_url
@@ -125,7 +129,7 @@ class Menu:
         self.password = password
 
     def auth_to_server(self):
-        print("[+] Authenticating to Captcha22")
+        self.logger.info("[+] Authenticating to Captcha22")
         count = 0
         while(count < 3):
             if self.username == None:
@@ -135,23 +139,23 @@ class Menu:
                 self.password = getpass.getpass(
                     'Please provide your password: ')
             self.new_Client = Client(self.server_url, self.server_path, self.server_port, self.username, self.password)
-            print("[-] Attempting authentication")
+            self.logger.info("[-] Attempting authentication")
             try:
                 self.new_Client.get_token()
             except:
                 pass
             if len(self.new_Client.token) > 0:
-                print("[-] Authentication successful")
+                self.logger.info("[-] Authentication successful")
                 self.authed = True
                 return
             else:
                 time.sleep(2)
-                print("[x] Invalid credentials, please try again")
+                self.logger.info("[x] Invalid credentials, please try again")
                 self.username = None
                 self.password = None
             count += 1
 
-        print("[x] Attempts failed, please try again")
+        self.logger.info("[x] Attempts failed, please try again")
         exit()
 
     def upload_captcha_sample(self):
@@ -160,16 +164,16 @@ class Menu:
         if (not self.authed):
             return
 
-        print("[+] CAPTCHA upload sequence method called")
-        print("[-] Please ensure that the file is a zip file with a subdirectory '/data' containing the labelled CAPTCHA images")
+        self.logger.info("[+] CAPTCHA upload sequence method called")
+        self.logger.info("[-] Please ensure that the file is a zip file with a subdirectory '/data' containing the labelled CAPTCHA images")
         file_location = str(input("Please provide the file path: "))
         client_name = str(input("Please provide the test name: "))
-        print("[-] Uploading file....")
+        self.logger.info("[-] Uploading file....")
         self.new_Client.upload_captchas(client_name, file_location)
-        print("[-] File uploaded")
+        self.logger.info("[-] File uploaded")
 
     def run_exported_model(self):
-        print("[X] This method has not yet been implemented")
+        self.logger.info("[X] This method has not yet been implemented")
 
     def menu_interface(self):
         if (not self.authed):
@@ -177,15 +181,15 @@ class Menu:
         if (not self.authed):
             return
 
-        print("[+] CAPTCHA22 server interface online. What would you like to do?")
+        self.logger.info("[+] CAPTCHA22 server interface online. What would you like to do?")
         while(True):
-            print("[1] Get details on all CAPTCHA models")
-            print("[2] Get details on a CAPTCHA model")
-            print("[3] Get the progression of CAPTCHA model training")
-            print("[4] Get the results of CAPTCHA model training")
-            print("[5] Download a training CAPTHCA model")
-            print("[6] Activate a server-side CAPTCHA model")
-            print("[7] Cancel")
+            self.logger.info("[1] Get details on all CAPTCHA models")
+            self.logger.info("[2] Get details on a CAPTCHA model")
+            self.logger.info("[3] Get the progression of CAPTCHA model training")
+            self.logger.info("[4] Get the results of CAPTCHA model training")
+            self.logger.info("[5] Download a training CAPTHCA model")
+            self.logger.info("[6] Activate a server-side CAPTCHA model")
+            self.logger.info("[7] Cancel")
 
             answer = str(input("Option: "))
             if (answer == "7"):
@@ -218,29 +222,29 @@ class Menu:
 
     def main(self):
 
-        print("[+] Welcome to CAPTCHA22. What would you like to do?")
+        self.logger.info("[+] Welcome to CAPTCHA22. What would you like to do?")
         while(True):
-            print("[1] Upload a CAPTCHA sample")
-            print("[2] Run an exported model")
-            print("[3] Interface with the Captcha22 server")
-            print("[4] Quit")
+            self.logger.info("[1] Upload a CAPTCHA sample")
+            self.logger.info("[2] Run an exported model")
+            self.logger.info("[3] Interface with the Captcha22 server")
+            self.logger.info("[4] Quit")
 
             answer = str(input("Option: "))
             if (answer == "1"):
                 self.upload_captcha_sample()
-                print("Connecting to CAPTCHA server")
+                self.logger.info("Connecting to CAPTCHA server")
                 continue
             if (answer == "2"):
                 self.run_exported_model()
-                print("Working with exported model")
+                self.logger.info("Working with exported model")
                 continue
             if (answer == "3"):
                 self.menu_interface()
-                print("Interfacing with the CAPTCHA22 server")
+                self.logger.info("Interfacing with the CAPTCHA22 server")
                 continue
             if (answer == "4"):
                 break
-            print("[x] Invalid option, please try again")
+            self.logger.info("[x] Invalid option, please try again")
 
 
 if __name__ == "__main__":

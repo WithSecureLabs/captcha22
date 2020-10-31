@@ -5,10 +5,12 @@ import tkinter
 from os import mkdir, path, rename, scandir
 from shutil import make_archive
 from PIL import Image, ImageTk
+import logging
 
 class EntryWindow(tkinter.Frame):
-    def __init__(self, master, input_dir="input/", output="./data/", image_type="png"):
+    def __init__(self, master, input_dir="input/", output="./data/", image_type="png", logger = logging.getLogger("Captcha22 Label Typer")):
         super().__init__(master)
+        self.logger = logger
         self.write_dir = output
         self.read_dir = input_dir
         self.file_type = image_type
@@ -23,7 +25,7 @@ class EntryWindow(tkinter.Frame):
 
         self.read_files(self.read_dir)
         if len(self.files) == 0:
-            print("No " + self.file_type + " files found")
+            self.logger.info("No " + self.file_type + " files found")
             sys.exit(2)
         self.index = -1
         self.create_gui()
@@ -51,7 +53,7 @@ class EntryWindow(tkinter.Frame):
             load = Image.open(image)
             render = ImageTk.PhotoImage(load, master=self)
         except Exception:
-            print("Could not open file:", image, file=sys.stderr)
+            self.logger.info("Could not open file:", image, file=sys.stderr)
             raise OSError
         self.image.configure(image=render)
         self.image.image = render

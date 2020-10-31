@@ -14,10 +14,12 @@ import requests
 import cv2
 import numpy as np
 from PIL import Image
+import logging
 
 
 class Cracker:
-    def __init__(self, server_url="http://127.0.01", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None, session_time=1800, use_hashes=False, use_filter=False, use_local=False, input_dir="./input/", output="./output/", image_type="png", filter_low=130, filter_high=142, captcha_id=None):
+    def __init__(self, server_url="http://127.0.01", server_path="/captcha22/api/v1.0/", server_port="5000", username=None, password=None, session_time=1800, use_hashes=False, use_filter=False, use_local=False, input_dir="./input/", output="./output/", image_type="png", filter_low=130, filter_high=142, captcha_id=None, logger = logging.getLogger("Captcha22 Cracker")):
+        self.logger = logger
         # API username and password
         self.username = username
         self.password = password
@@ -171,7 +173,7 @@ class Cracker:
 
     def check_session_valid(self):
         if (time.time() - self.currentSessionTime > self.validSessionTime):
-            print("Refreshing Captcha API token")
+            self.logger.info("Refreshing Captcha API token")
             self.auth_to_api()
 
     def auth_to_api(self):
@@ -180,7 +182,7 @@ class Cracker:
             self.username, self.password))
         load = json.loads(r.content)
         if load['message'] == 'success':
-            print("Got token")
+            self.logger.info("Got token")
             self.token = load['token']
         self.currentSessionTime = time.time()
 
@@ -202,7 +204,7 @@ class Cracker:
         r = requests.post(url, json=datas, headers=self.build_token_headers())
         # Inject code here to talk to Pyppeteer
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
         return (json_data['outputs']['output'])
 
     def submit_self(self, b64_image):
@@ -229,7 +231,7 @@ class Cracker:
             answer = self.compare_hashes(self.tmp_dir + self.temp_image_name)
 
             if (answer != ""):
-                print(
+                self.logger.info(
                     "Hash collision, providing the value of the previously seen captcha")
                 return answer
 
@@ -258,7 +260,7 @@ class Cracker:
         url = self.serverURL + "captchas/" + str(captchaID)
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
         return r.content
 
     def main(self):

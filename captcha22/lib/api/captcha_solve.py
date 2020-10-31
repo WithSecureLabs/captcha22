@@ -7,10 +7,13 @@ import json
 import time
 import requests
 import cv2
+import logging
 
 
 class Client:
-    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", input_dir="./input/", image_type="png", captcha_id=None, username=None, password=None):
+    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", input_dir="./input/", image_type="png", captcha_id=None, username=None, password=None, logger = logging.getLogger("Captcha22 Client API")):
+
+        self.logger = logger
 
         self.username = username
         self.password = password
@@ -27,7 +30,7 @@ class Client:
             self.username, self.password))
         load = json.loads(r.content)
         if load['message'] == 'success':
-            print("Got token")
+            self.logger.info("Got token")
             self.token = load['token']
 
     def get_captcha_token(self, captchaID):
@@ -39,7 +42,7 @@ class Client:
         url = self.serverURL + "captchas/" + str(captchaID)
         r = requests.get(url, headers=self.build_token_headers())
         json_data = json.loads(r.content)
-        print(json.dumps(json_data, indent=2))
+        self.logger.info(json.dumps(json_data, indent=2))
 
         return r.content
 
@@ -62,14 +65,15 @@ class Client:
                 r = requests.post(
                     url, json=datas, headers=self.build_token_headers())
                 json_data = json.loads(r.content)
-                print(json.dumps(json_data, indent=2))
+                self.logger.info(json.dumps(json_data, indent=2))
                 img = cv2.imread(image)
                 cv2.imshow('captcha', img)
                 c = cv2.waitKey(0)
 
 
 class Menu:
-    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", input_dir="./input/", image_type="png", captcha_id=None, username=None, password=None):
+    def __init__(self, server_url="http://127.0.0.1", server_path="/captcha22/api/v1.0/", server_port="5000", input_dir="./input/", image_type="png", captcha_id=None, username=None, password=None, logger = logging.getLogger("Captcha22 Client API")):
+        self.logger = logger
         self.authed = False
         self.username = username
         self.password = password
@@ -83,7 +87,7 @@ class Menu:
         self.captcha_id = captcha_id
 
     def auth_to_server(self):
-        print("[+] Authenticating to Captcha22")
+        self.logger.info("[+] Authenticating to Captcha22")
         count = 0
         while(count < 3):
             if (self.username == None):
@@ -92,28 +96,28 @@ class Menu:
             if (self.password == None):
                 self.password = getpass.getpass(
                     'Please provide your password: ')
-            self.new_Client = Client(self.server_url, self.server_path, self.server_port, self.input_dir, self.image_type, self.captcha_id, self.username, self.password)
-            print("[-] Attempting authentication")
+            self.new_Client = Client(self.server_url, self.server_path, self.server_port, self.input_dir, self.image_type, self.captcha_id, self.username, self.password, self.logger)
+            self.logger.info("[-] Attempting authentication")
             try:
                 self.new_Client.get_token()
             except:
                 pass
             if len(self.new_Client.token) > 0:
-                print("[-] Authentication successful")
+                self.logger.info("[-] Authentication successful")
                 self.authed = True
                 return
             else:
                 time.sleep(2)
                 self.username = None
                 self.password = None
-                print("[x] Invalid credentials, please try again")
+                self.logger.info("[x] Invalid credentials, please try again")
             count += 1
 
-        print("[x] Attempts failed, please try again")
+        self.logger.info("[x] Attempts failed, please try again")
         exit()
 
     def solve(self):
-        print("[+] Starting CAPTCHA Solving System")
+        self.logger.info("[+] Starting CAPTCHA Solving System")
         if (not self.authed):
             self.auth_to_server()
         if (not self.authed):
@@ -129,10 +133,10 @@ class Menu:
 
     def menu_run(self):
 
-        print("[+] Welcome to Captcha22. What would you like to do?")
+        self.logger.info("[+] Welcome to Captcha22. What would you like to do?")
         while(True):
-            print("[1] Run Solution")
-            print("[2] Quit")
+            self.logger.info("[1] Run Solution")
+            self.logger.info("[2] Quit")
 
             answer = str(input("Option: "))
             if (answer == "1"):
@@ -140,7 +144,7 @@ class Menu:
                 continue
             if (answer == "2"):
                 break
-            print("[x] Invalid option, please try again")
+            self.logger.info("[x] Invalid option, please try again")
 
 
 if __name__ == "__main__":

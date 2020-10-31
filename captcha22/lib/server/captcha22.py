@@ -6,6 +6,7 @@ import glob
 import cv2
 import ast
 import argparse
+import logging
 
 
 class captcha:
@@ -98,22 +99,22 @@ class captcha:
         f.write(str(self.modelOn) + "\n")
 
     def export_model(self):
-        print("Going to extract the model")
+        self.logger.info("Going to extract the model")
         os.system("(cd " + self.path + " && aocr export --max-height " + str(
             self.image_height) + " --max-width " + str(self.image_width) + " exported-model)")
         time.sleep(5)
 
     def run_model(self):
-        print("Starting serving model")
-        print("nohup tensorflow_model_server --port=" + str(self.modelPorts) + " --rest_api_port=" + str(self.modelPorts + 1) +
+        self.logger.info("Starting serving model")
+        self.logger.info("nohup tensorflow_model_server --port=" + str(self.modelPorts) + " --rest_api_port=" + str(self.modelPorts + 1) +
               " --model_name=" + self.modelName + " --model_base_path=" + os.getcwd() + "/" + self.modelPath + " 2&> /dev/null &")
         os.system("nohup tensorflow_model_server --port=" + str(self.modelPorts) + " --rest_api_port=" + str(self.modelPorts + 1) +
                   " --model_name=" + self.modelName + " --model_base_path=" + os.getcwd() + "/" + self.modelPath + " 2&> /dev/null &")
 
     def stop_model(self):
-        print("Stoping serving model")
+        self.logger.info("Stoping serving model")
         os.system("kill $(ps aux | grep 'tensorflow_model_server --port=" +
-                  str(self.modelPorts) + "' | awk '{print $2}')")
+                  str(self.modelPorts) + "' | awk '{self.logger.info $2}')")
 
     def model_trained(self):
         return self.hasTrained
@@ -122,7 +123,7 @@ class captcha:
         return self.busyTraining
 
     def test_training_level(self):
-        print("Testing training level")
+        self.logger.info("Testing training level")
         # Go read the aocr log
         f = open(self.path + "aocr.log")
         lines = f.readlines()
@@ -142,7 +143,7 @@ class captcha:
             current_checkpoint = ast.literal_eval(
                 lines[0].split('ckpt-')[1].split("\"")[0])
         except:
-            print("No current checkpoint")
+            self.logger.info("No current checkpoint")
             pass
 
         while (step > 100):
@@ -154,11 +155,11 @@ class captcha:
             '.')[0] + "." + values[3].split('perplexity: ')[1].split('.')[1])
         self.checkpoint = current_checkpoint
 
-        print("Values are: ")
-        print("Step: ", self.last_step)
-        print("Loss: ", self.loss)
-        print("Perplexity: ", self.perplexity)
-        print("Checkpoint: ", self.checkpoint)
+        self.logger.info("Values are: ")
+        self.logger.info("Step: ", self.last_step)
+        self.logger.info("Loss: ", self.loss)
+        self.logger.info("Perplexity: ", self.perplexity)
+        self.logger.info("Checkpoint: ", self.checkpoint)
 
         self.update_file()
 
@@ -174,30 +175,30 @@ class captcha:
 
     def stop_training(self):
         # Sometime the kill is not respected. Do this three times to ensure it is killed
-        print("Going to stop training")
-        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
-        print("training stopped, waiting")
+        self.logger.info("Going to stop training")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        self.logger.info("training stopped, waiting")
         time.sleep(5)
-        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
-        print("training stopped, waiting")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        self.logger.info("training stopped, waiting")
         time.sleep(5)
-        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
-        print("training stopped, waiting")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        self.logger.info("training stopped, waiting")
         time.sleep(5)
         self.busyTraining = False
         self.hasTrained = True
         self.update_file()
 
     def test_training(self):
-        print("Testing")
-        print("(cd " + self.path + " && aocr test --max-height " + str(self.image_height) +
+        self.logger.info("Testing")
+        self.logger.info("(cd " + self.path + " && aocr test --max-height " + str(self.image_height) +
               " --max-width " + str(self.image_width) + " labels/testing.tfrecords 2>&1 | tee test.txt)")
         os.system("(cd " + self.path + " && aocr test --max-height " + str(self.image_height) +
                   " --max-width " + str(self.image_width) + " labels/testing.tfrecords 2>&1 | tee test.txt)")
         time.sleep(30)
 
     def start_training(self):
-        print("Starting training")
+        self.logger.info("Starting training")
         self.busyTraining = True
         self.update_file()
         os.system("(cd " + self.path + " && nohup aocr train --max-height " + str(self.image_height) +
@@ -205,8 +206,11 @@ class captcha:
 
 
 class Captcha22:
-    def __init__(self, max_steps=2000, loss_threshold=0.0002, perplexity_threshold=1.00018, split_percentage=90.0, starting_port=9000, input_folder="./Unsorted", work_folder="./Busy",  model_folder="./Model"):
-        print("Class start")
+    def __init__(self, max_steps=2000, loss_threshold=0.0002, perplexity_threshold=1.00018, split_percentage=90.0, starting_port=9000, input_folder="./Unsorted", work_folder="./Busy",  model_folder="./Model", logger=logging.getLogger("Captcha22 Engine")):
+
+        self.logger = logger
+
+        self.logger.info("Captcha22 engine start")
         self.busyTraining = False
 
         self.training_steps_max = int(max_steps)
@@ -245,7 +249,8 @@ class Captcha22:
 
 
     def copy_files(self, file):
-        print("Starting the copy of files")
+
+        self.logger.info("Starting the copy of files")
         names = file.split(".")[0].split("/")[-1].split("_")
         if (file[0] == "."):
             names = file.split(".")[1].split("/")[-1].split("_")
@@ -287,15 +292,15 @@ class Captcha22:
         model.export_model()
         # Copy the model to the correct path for safekeeping
         os.system("cp -r " + model.path + "exported-model/* " + self.model_URL + "/" + shortPath + "/exported-model/1/")
-        print("Model copied")
+        self.logger.info("Model copied")
 
     def run_model(self, model):
         # Single command to start the model
-        print("Start model")
+        self.logger.info("Start model")
         model.run_model()
 
     def stop_model(self, model):
-        print("Stop model")
+        self.logger.info("Stop model")
         model.stop_model()
 
     def label_captchas(self, file):
@@ -308,9 +313,9 @@ class Captcha22:
         write_dir = self.busy_URL + "/" + \
             names[0] + "/" + names[1] + "/" + names[2] + "/labels/"
 
-        print("Directories is:")
-        print(read_dir)
-        print(write_dir)
+        self.logger.info("Directories is:")
+        self.logger.info(read_dir)
+        self.logger.info(write_dir)
 
         onlyfiles = glob.glob(read_dir + "*.png")
 
@@ -359,7 +364,7 @@ class Captcha22:
         time.sleep(5)
 
     def create_model(self, file):
-        print(file)
+        self.logger.info(file)
         names = file.split(".")[0].split("/")[-1].split("_")
         if (file[0] == '.'):
             names = file.split(".")[1].split("/")[-1].split("_")
@@ -383,26 +388,26 @@ class Captcha22:
             self.new_models.append(model)
 
     def check_files(self):
-        print("Checking if there is any new files")
+        self.logger.info("Checking if there is any new files")
 
         files = glob.glob(self.unsorted_URL + "/*.zip")
 
-        print(files)
+        self.logger.info(files)
 
-        print("Start running")
+        self.logger.info("Start running")
 
         for file in files:
-            print("Copy files")
+            self.logger.info("Copy files")
             self.copy_files(file)
-            print("Create labels")
+            self.logger.info("Create labels")
             self.label_captchas(file)
-            print("Generate aocr")
+            self.logger.info("Generate aocr")
             self.generate_aocr_records(file)
-            print("Create model")
+            self.logger.info("Create model")
             self.create_model(file)
-            print("Updating file")
+            self.logger.info("Updating file")
             self.update_file()
-            print("Done")
+            self.logger.info("Done")
 
     def update_file(self):
         f = open('models.txt', 'w')
@@ -426,7 +431,7 @@ class Captcha22:
         # Check if this model is busy training
         if model.busy_training():
             # Request an update and kill if needed
-            print("Model update")
+            self.logger.info("Model update")
             model.test_training_level()
             if model.determine_endpoint(self.training_steps_max, self.training_loss_min, self.training_perplexity_min):
                 # We need to stop training
@@ -457,25 +462,25 @@ class Captcha22:
                 self.update_file()
 
         else:
-            print("Going to start the model training procedure")
+            self.logger.info("Going to start the model training procedure")
             # Model not training, start training
             model.start_training()
 
     def start_model_server(self):
-        print("Checking the models")
-        print(len(self.existing_models))
+        self.logger.info("Checking the models")
+        self.logger.info(len(self.existing_models))
         for model in self.existing_models:
             model.update_from_file()
             # Check if the start var has been set and active not, then start
             if model.modelOn and not model.modelActive:
                 # The model needs to be started
-                print("Starting model")
+                self.logger.info("Starting model")
                 model.modelActive = True
                 self.run_model(model)
 
             if not model.modelOn and model.modelActive:
                 # The model is on but needs to be killed
-                print("Killing model")
+                self.logger.info("Killing model")
                 model.modelActive = False
                 self.stop_model(model)
             model.update_file()
@@ -488,7 +493,7 @@ class Captcha22:
             self.continue_training()
             if (not self.busyTraining):
                 self.start_model_server()
-            print("Starting wait cycle")
+            self.logger.info("Starting wait cycle")
             time.sleep(30)
 
     def first_start(self):
@@ -513,6 +518,5 @@ class Captcha22:
 
 
 if __name__ == "__main__":
-
     server = Captcha22()
     server.main()

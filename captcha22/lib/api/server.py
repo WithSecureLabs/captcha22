@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import os
 import ast
 import glob
 import json
@@ -10,10 +11,12 @@ import string
 import time
 import uuid
 import requests
+import logging
 from flask import Flask, abort, jsonify, make_response, request, send_file
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
 from flask_restful import Api, Resource, fields, marshal, reqparse
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_cors import CORS
 
 class user:
     def __init__(self, username, password):
@@ -98,7 +101,7 @@ class AuthSystem:
         return False
 
     def get_and_verify(self):
-        print("verifying token")
+        self.source.logger.info("verifying token")
         # First make sure there are no old tokens
         self.clean_tokens()
         headers = request.headers
@@ -107,12 +110,14 @@ class AuthSystem:
 
 
 class data_source:
-    def __init__(self, file_drop="./Unsorted/", max_tokens=5, server_location="./", user_file="users.txt", work_folder="./Busy", model_folder="./Model"):
+    def __init__(self, file_drop="./Unsorted/", max_tokens=5, server_location="./", user_file="users.txt", work_folder="./Busy", model_folder="./Model", logger = logging.getLogger("Captcha22 API Data Source")):
+
+        self.logger = logger
 
         self.FILE_DROP_LOCATION = file_drop
         self.CAPTCHA_SERVER_LOCATION = server_location
-        self.MODELS = model_folder
-        self.WORK = work_folder
+        self.MODELS = model_folder + "/"
+        self.WORK = work_folder + "/"
 
         self.max_tokens = max_tokens
         self.users = []
@@ -203,7 +208,30 @@ class data_source:
                     self.captchas.append(captcha)
                     count += 1
 
+    def registerUser(self, username, password):
+        #First test to make sure the username and password are not empty
+        if (len(username) < 1 or len(password) < 1):
+            return False
+        #Now we can ensure that the user does not exist already
+        for myuser in self.users:
+            if (myuser.username == username):
+                return False
+
+        #Now we can test our password policy - our password policy only requires the password to be 16 character long, no complexity. This is to make a push passphrases
+        if (len(password) < 16):
+            return False
+
+        #All checks out, now we can add the user
+        self.users.append(user(username, generate_password_hash(password)))
+
+        f = open(self.user_file, 'w')
+        for myuser in self.users:
+            f.write(myuser.username + "," + myuser.password + "\n")
+        f.close()
+        return True
+
     def change_model_status(self, captcha, status):
+        self.logger.info("Status is now: " + str(status))
         file_location = self.WORK + captcha['username'].replace(
             " ", "") + "/" + captcha['title'].replace(" ", "") + "/" + str(captcha['modelNumber'])
         update = self.get_update(file_location)
@@ -468,6 +496,14 @@ class ExportAPI(Resource):
         shutil.make_archive(file_location, 'zip', file_location)
 
         local_file_to_send = file_location + ".zip"
+        if not os.path.isabs(local_file_to_send):
+            self.data_source.logger.warning("The path is not an abs path")
+            if (local_file_to_send[0] == '.'):
+                local_file_to_send = local_file_to_send[1:]
+
+
+            local_file_to_send = os.getcwd() + local_file_to_send
+
         return send_file(local_file_to_send, attachment_filename='exported_model.zip')
 
 
@@ -650,6 +686,42 @@ class CaptchaAPI(Resource):
         return {'result': True}
 
 
+class UserAPI(Resource):
+    def __init__(self, **kwargs):
+        self.data_source = kwargs['source']
+        self.auth_source = kwargs['auth']
+
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('username', type=str, location='json')
+        self.reqparse.add_argument('password', type=str, location='json')
+
+        super(UserAPI, self).__init__()
+
+    def get(self):
+        username = request.args.get('username')
+        password = request.args.get('password')
+        #Here we can get the username and password for registration
+        if (self.data_source.registerUser(username, password)):
+            return {'result' : True}
+        else:
+            return {'result' : False}
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        username = args['username']
+        password = args['password']
+
+        #Here we can get the username and password for registration
+        if (self.data_source.registerUser(username, password)):
+            return {'result' : True}
+        else:
+            return {'result' : False}
+
+
+
+
+
+
 class GenerateTokenAPI(Resource):
 
     def validate_user(self, captcha):
@@ -688,9 +760,14 @@ class GenerateTokenAPI(Resource):
 
 
 class ApiServer:
-    def __init__(self, host="0.0.0.0", port="5000", is_debug=False, file_drop="./Unsorted/", max_tokens=5, server_location="./", user_file="users.txt", work_folder="./Busy", model_folder="./Model"):
+    def __init__(self, host="0.0.0.0", port="5000", is_debug=False, file_drop="./Unsorted/", max_tokens=5, server_location="./", user_file="users.txt", work_folder="./Busy", model_folder="./Model", logger=logging.getLogger("Captcha22 Server API")):
+        self.logger = logger
+        self.logger.info("Captcha22 Server API Start")
+
         # Create the app
         self.app = Flask(__name__, static_url_path="")
+
+        self.cors = CORS(self.app)
 
         self.api = Api(self.app)
 
@@ -698,7 +775,7 @@ class ApiServer:
         self.port = port
         self.debug = is_debug
 
-        self.source = data_source(file_drop, max_tokens, server_location, user_file, work_folder, model_folder)
+        self.source = data_source(file_drop, max_tokens, server_location, user_file, work_folder, model_folder, self.logger)
 
         self.systemAuth = AuthSystem(self.source)
 
@@ -717,6 +794,8 @@ class ApiServer:
         self.api.add_resource(SolveCaptchaAPI, '/captcha22/api/v1.0/solve_captcha', endpoint='solve_captcha',
                               resource_class_kwargs={'source': self.source, 'auth': self.systemAuth})
         self.api.add_resource(GenerateTokenAPI, '/captcha22/api/v1.0/generate_token', endpoint='generate_token',
+                              resource_class_kwargs={'source': self.source, 'auth': self.systemAuth})
+        self.api.add_resource(UserAPI, '/captcha22/api/v1.0/user', endpoint='user',
                               resource_class_kwargs={'source': self.source, 'auth': self.systemAuth})
 
     def main(self):
