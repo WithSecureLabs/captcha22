@@ -328,7 +328,7 @@ class Captcha22:
         labels = open(write_dir + "training_labels.txt", "w")
         while (count < train_count):
             file = onlyfiles[count]
-            answer = file.replace('.png', '').split('/')[-1]
+            answer = file.replace('.png', '').split('/')[-1].split('_')[-1]
 
             labels.write(self.busy_URL + "/" + names[0] + "/" + names[1] + "/" +
                          names[2] + "/data/" + file.split('/')[-1] + ' ' + answer + '\n')
@@ -343,7 +343,7 @@ class Captcha22:
         while (count < test_count):
             file = onlyfiles[train_count + count]
 
-            answer = file.replace('.png', '').split('/')[-1]
+            answer = file.replace('.png', '').split('/')[-1].split('_')[-1]
             labels.write(self.busy_URL + "/" + names[0] + "/" + names[1] + "/" +
                          names[2] + "/data/" + file.split('/')[-1] + ' ' + answer + '\n')
 
