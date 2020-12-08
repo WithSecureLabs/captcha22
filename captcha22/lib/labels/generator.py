@@ -21,7 +21,7 @@ class LabelGenerator:
 
         # Create the labels
         for file in onlyfiles:
-            answer = file.replace("." + self.image_type, '').split('/')[-1]
+            answer = file.replace("." + self.image_type, '').split('/')[-1].split('_')[-1]
             labels.write(file.split('/')[-1] + ' ' + answer + '\n')
         labels.close()
 
