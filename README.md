@@ -33,7 +33,7 @@ CAPTCHA22 is most performant on a GPU-enabled tensorflow build. This, however, w
 * To install a less optimal, CPU-based, tensorflow build - you can simply issue the following command:
 
     ```bash
-    pip install tensorflow
+    pip install "tensorflow<2"
     ```
 
 * The tensorflow [serving](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/setup.md#installation-1) addon is required to host trained CAPTCHA models.
