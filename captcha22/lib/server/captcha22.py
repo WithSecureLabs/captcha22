@@ -10,8 +10,10 @@ import logging
 
 
 class captcha:
-    def __init__(self, path):
+    def __init__(self, path, logger):
         self.path = path
+
+        self.logger = logger
 
         self.hasTrained = False
         self.busyTraining = False
@@ -114,7 +116,7 @@ class captcha:
     def stop_model(self):
         self.logger.info("Stoping serving model")
         os.system("kill $(ps aux | grep 'tensorflow_model_server --port=" +
-                  str(self.modelPorts) + "' | awk '{self.logger.info $2}')")
+                  str(self.modelPorts) + "' | awk '{print $2}')")
 
     def model_trained(self):
         return self.hasTrained
@@ -176,13 +178,13 @@ class captcha:
     def stop_training(self):
         # Sometime the kill is not respected. Do this three times to ensure it is killed
         self.logger.info("Going to stop training")
-        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
         self.logger.info("training stopped, waiting")
         time.sleep(5)
-        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
         self.logger.info("training stopped, waiting")
         time.sleep(5)
-        os.system("kill $(ps aux | grep 'aocr' | awk '{self.logger.info $2}')")
+        os.system("kill $(ps aux | grep 'aocr' | awk '{print $2}')")
         self.logger.info("training stopped, waiting")
         time.sleep(5)
         self.busyTraining = False
@@ -370,7 +372,7 @@ class Captcha22:
             names = file.split(".")[1].split("/")[-1].split("_")
         path = self.busy_URL + "/" + names[0] + \
             "/" + names[1] + "/" + names[2] + "/"
-        model = captcha(path)
+        model = captcha(path, self.logger)
 
         if model.model_trained():
             self.existing_models.append(model)
@@ -378,7 +380,7 @@ class Captcha22:
             self.new_models.append(model)
 
     def reload_models(self, path):
-        model = captcha(path)
+        model = captcha(path, self.logger)
         if model.model_trained():
             self.existing_models.append(model)
         else:
