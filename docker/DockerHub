@@ -1,0 +1,9 @@
+FROM tinusgreen/captcha22_ui:baseimage
+
+ENV API_URL='"http://172.17.0.1:5000/captcha22/api/v1.0/"'
+
+RUN npm run build
+
+EXPOSE 8080
+
+CMD [ "http-server", "dist" ]

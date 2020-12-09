@@ -24,7 +24,7 @@ from lib.core.client import (api_basic, api_full, captcha_labeller,
                                 captcha_typer, client_api, cracker,
                                 cracker_baseline, cracker_pyppeteer,
                                 label, label_generator)
-from lib.core.server import server, server_api
+from lib.core.server import server, server_api, server_ui, server_full
 
 def client_help(args):
     sys.exit(1)
@@ -193,6 +193,95 @@ def main():
     cracker_group_attack.add_argument(
         "--password-file", default=None, help="Specify path to file containing passwords for brute force attack")
 
+    #### FULL SERVER ####
+    full_server_parser = server_subparsers.add_parser(
+        "full", help="Use to execute the CAPTCHA22 Engine, API, and UI"
+    )
+    full_server_parser.set_defaults(func=server_full)
+
+    #Arguments
+    #Storage Structure
+    parser_group_storage_full = full_server_parser.add_argument_group(
+        title="Storage Arguments"
+    )
+
+    parser_group_storage_full.add_argument("--model-file", default="models.txt", help="Specify the file that stores the location of all previous models, default is models.txt")
+
+    parser_group_storage_full.add_argument("--input-folder", default="./Unsorted/",
+                                      help="Specify the folder that will be monitored for new uploads, default is ./Unsorted/")
+    parser_group_storage_full.add_argument("--work-folder", default="./Busy",
+                                      help="Specify the folder where training data will be stored, default is ./Busy")
+    parser_group_storage_full.add_argument("--model-folder", default="./Model",
+                                      help="Specify the folder where CAPTCHA models will be stored, default is ./Models")
+
+    #Engine
+    parser_group_engine_full = full_server_parser.add_argument_group(
+        title="Engine Arguments"
+    )
+
+    parser_group_engine_full.add_argument(
+        "--max-steps", default=2000, type=int, help="Specify the maximum amount of training steps per CAPTCHA upload, default is 2000")
+    parser_group_engine_full.add_argument("--loss-threshold", default=0.0002, type=float,
+                                       help="Specify the threshold of loss at which training should stop, default is 0.0002")
+    parser_group_engine_full.add_argument("--perplexity-threshold", default=1.00018,
+                                       help="Specify the threshold of perplexity at which training should stop, default is 1.00018")
+    parser_group_engine_full.add_argument(
+        "--split-percentage", default=90.0, type=float, help="Specify the data split percentage for training vs testing data, default is 90.0")
+
+    parser_group_engine_full.add_argument(
+        "--starting-port", default=9000, type=int, help="Specify the starting port for new models to be hosted, default is 9000")
+
+    #API
+    parser_group_api_full = full_server_parser.add_argument_group(
+        title="API Arguments"
+    )
+
+    parser_group_api_full.add_argument(
+        "--host", default="0.0.0.0", help="Specify host where the API would execute, default is 0.0.0.0")
+    parser_group_api_full.add_argument(
+        "--port", default="5000", help="Specify port where the API would execute, default is 5000")
+    parser_group_api_full.add_argument(
+        "--enable-debugging", default=False, help="Specify if the API service should execute in debug mode, default is False", action="store_true")
+
+    parser_group_api_full.add_argument(
+        "--max-tokens", default=5, type=int, help="Specify the maximum amount of tokens allowed per user, default is 5")
+
+    parser_group_api_full.add_argument(
+        "--server-location", default='./', help="Specify the base folder of the CAPTCHA22 Server, default is ./")
+
+    parser_group_api_full.add_argument(
+        "--user-file", default='users.txt', help="Specify file where user credentials for API is stored, default is users.txt")
+
+    #UI
+    parser_group_ui_full = full_server_parser.add_argument_group(
+        title="UI Arguments"
+    )
+
+    parser_group_ui_full.add_argument(
+        "--ui-port", default=8080, help="Specify the port where the UI will be exposed on, default is 8080"
+    )
+
+    parser_group_ui_full.add_argument(
+        "--docker-server", default="unix://var/run/docker.sock", help="Specify the docker server URL, default is unix://var/run/docker.sock"
+    )
+
+    parser_group_ui_full.add_argument(
+        "--container-name", default="captcha22/captcha22_ui", help="Specify the container name for the UI, default is captcha22/captcha22_ui"
+    )
+
+    parser_group_ui_full.add_argument(
+        "--image-name", default="tinusgreen/captcha22_ui:latest", help="Specify docker hub image to use as base image for UI, default is tinusgreen/catcha22_ui:latest"
+    )
+
+    parser_group_ui_full.add_argument(
+        "--api-ip", help="Specify the IP of the API, this value must be provided", required=True
+    )
+
+    parser_group_ui_full.add_argument(
+        "--api-endpoint", default="/captcha22/api/v1.0/", help="Specify the api endpoint for the UI to use, default is /captcha22/api/v1.0/"
+    )
+
+
     #### SERVER ONLY ####
     server_server_parser = server_subparsers.add_parser(
         "engine", help="Use to execute the CAPTCHA22 Engine")
@@ -228,6 +317,43 @@ def main():
                                       help="Specify the folder where training data will be stored, default is ./Busy")
     parser_group_storage.add_argument("--model-folder", default="./Model",
                                       help="Specify the folder where CAPTCHA models will be stored, default is ./Models")
+
+    #### UI ONLY ####
+    ui_parser = server_subparsers.add_parser(
+        "ui", help="Use to execute the CAPTCHA22 UI Server")
+    ui_parser.set_defaults(func=server_ui)
+
+    parser_group_docker = ui_parser.add_argument_group(title="Docker Arguments")
+
+    parser_group_docker.add_argument(
+        "--ui-port", default=8080, help="Specify the port where the UI will be exposed on, default is 8080"
+    )
+
+    parser_group_docker.add_argument(
+        "--docker-server", default="unix://var/run/docker.sock", help="Specify the docker server URL, default is unix://var/run/docker.sock"
+    )
+
+    parser_group_docker.add_argument(
+        "--container-name", default="captcha22/captcha22_ui", help="Specify the container name for the UI, default is captcha22/captcha22_ui"
+    )
+
+    parser_group_docker.add_argument(
+        "--image-name", default="tinusgreen/captcha22_ui:latest", help="Specify docker hub image to use as base image for UI, default is tinusgreen/catcha22_ui:latest"
+    )
+
+    parser_group_ui = ui_parser.add_argument_group(title="UI Arguments")
+
+    parser_group_ui.add_argument(
+        "--api-ip", help="Specify the IP of the API, this value must be provided", required=True
+    )
+
+    parser_group_ui.add_argument(
+        "--api-port", default=5000, help="Specify the port of the API, default is 5000"
+    )
+
+    parser_group_ui.add_argument(
+        "--api-endpoint", default="/captcha22/api/v1.0/", help="Specify the api endpoint for the UI to use, default is /captcha22/api/v1.0/"
+    )
 
     #### API ONLY ####
     api_parser = server_subparsers.add_parser(
