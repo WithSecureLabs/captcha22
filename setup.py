@@ -3,7 +3,8 @@ from setuptools import setup
 
 REQUIRED_PACKAGES = [
     'pytest', 'aocr', 'numpy', 'opencv-python', 'Flask', 'flask_restful',
-    'flask_httpauth', 'pytest-shutil', 'pillow', 'pyppeteer', 'requests'
+    'flask_httpauth', 'flask-cors', 'pytest-shutil', 'pillow', 'pyppeteer',
+    'requests'
 ]
 VERSION = 'v1.0.5'
 
