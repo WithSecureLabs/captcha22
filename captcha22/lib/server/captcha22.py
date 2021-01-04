@@ -114,7 +114,7 @@ class captcha:
                   " --model_name=" + self.modelName + " --model_base_path=" + os.getcwd() + "/" + self.modelPath + " 2&> /dev/null &")
 
     def stop_model(self):
-        self.logger.info("Stoping serving model")
+        self.logger.info("Stopping serving model")
         os.system("kill $(ps aux | grep 'tensorflow_model_server --port=" +
                   str(self.modelPorts) + "' | awk '{print $2}')")
 
@@ -158,10 +158,10 @@ class captcha:
         self.checkpoint = current_checkpoint
 
         self.logger.info("Values are: ")
-        self.logger.info("Step: ", self.last_step)
-        self.logger.info("Loss: ", self.loss)
-        self.logger.info("Perplexity: ", self.perplexity)
-        self.logger.info("Checkpoint: ", self.checkpoint)
+        self.logger.info("Step: {}".format(self.last_step))
+        self.logger.info("Loss: {}".format(self.loss))
+        self.logger.info("Perplexity: {}".format(self.perplexity))
+        self.logger.info("Checkpoint: {}".format(self.checkpoint))
 
         self.update_file()
 
@@ -390,7 +390,7 @@ class Captcha22:
             self.new_models.append(model)
 
     def check_files(self):
-        self.logger.info("Checking if there is any new files")
+        self.logger.info("Checking if there are any new files")
 
         files = glob.glob(self.unsorted_URL + "/*.zip")
 
