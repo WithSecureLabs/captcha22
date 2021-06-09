@@ -80,7 +80,8 @@ class Client:
         files = [
             ('captcha', ('captcha', json.dumps(datas), 'application/json')),
         ]
-        self.logger.info (json(datas))
+
+        self.logger.info(json.dumps(datas, indent=2))
 
         r = requests.post(url, json=datas, headers=self.build_token_headers())
         json_data = json.loads(r.content)

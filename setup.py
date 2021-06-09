@@ -6,7 +6,7 @@ REQUIRED_PACKAGES = [
     'flask_httpauth', 'flask-cors', 'pytest-shutil', 'pillow', 'pyppeteer',
     'requests'
 ]
-VERSION = 'v1.0.5'
+VERSION = 'v1.0.7'
 
 setup(
     name='captcha22',
