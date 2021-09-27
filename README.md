@@ -28,7 +28,7 @@ pip install captcha22
 
 ### Prerequisites
 
-CAPTCHA22 is most performant on a GPU-enabled tensorflow build. This, however, will require numerous steps (as discussed [here](https://www.tensorflow.org/install/gpu)). 
+CAPTCHA22 is most performant on a GPU-enabled tensorflow build. This, however, will require numerous steps (as discussed [here](https://www.tensorflow.org/install/gpu)). Currently TF<2 is required for AOCR, which requires Python<3.7. AOCR will be ported to TF2 in the future.
 
 * To install a less optimal, CPU-based, tensorflow build - you can simply issue the following command:
 
@@ -88,7 +88,7 @@ python -c "from werkzeug.security import generate_password_hash;print('username_
 
 #### 2. Upload CAPTCHA training samples
 
-To upload training samples, simply drop the ZIP file you created in [Step 1](#labelling) into `./Unsorted/`. Alternatively, if you opted to enable the API, you can perform this step interactively using the client: 
+To upload training samples, simply drop the ZIP file you created in [Step 1](#labelling) into `./Unsorted/`. The zip file name should be `<captcha_name>_<captcha_version>.zip`. Alternatively, if you opted to enable the API, you can perform this step interactively using the client: 
 
 
 ```bash
